@@ -16,6 +16,10 @@
 
 cmake_minimum_required(VERSION 3.6)
 
+# Add a static library called "playcore" built with the c++_static STL.
+include(${PLAYCORE_LOCATION}/playcore.cmake)
+add_playcore_static_library()
+
 # build native_app_glue as a static lib
 add_library(native_app_glue STATIC
         ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
@@ -27,7 +31,7 @@ set(CMAKE_SHARED_LINKER_FLAGS
 
 # Set common compiler options
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall")
-add_definitions("-DIMGUI_IMPL_OPENGL_ES2")
+add_definitions("-DIMGUI_IMPL_OPENGL_ES3")
 
 # build Dear ImGui as a static lib
 set(IMGUI_BASE_DIR "../../../../../third-party/imgui")
@@ -53,6 +57,7 @@ add_library(game SHARED
         native_engine.cpp
         scene.cpp
         scene_manager.cpp
+        texture_manager.cpp
         util.cpp)
 
 target_include_directories(game PRIVATE
@@ -69,5 +74,5 @@ target_link_libraries(game
         native_app_glue
         atomic
         EGL
-        GLESv2
+        GLESv3
         log)

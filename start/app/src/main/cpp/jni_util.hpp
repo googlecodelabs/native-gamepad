@@ -24,7 +24,7 @@ struct JniSetup {
 };
 
 // Does JNI setup (if needed) and returns a struct with convenience objects.
-struct JniSetup* GetJNISetup();
+struct JniSetup *GetJNISetup();
 
 #endif
 

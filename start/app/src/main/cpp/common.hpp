@@ -18,16 +18,16 @@
 #define nativegamepad_common_hpp
 
 extern "C" {
-    #include <EGL/egl.h>
-    #include <GLES2/gl2.h>
-    #include <jni.h>
-    #include <errno.h>
-    #include <android/sensor.h>
-    #include <android/log.h>
-    #include <android_native_app_glue.h>
-    #include <cstring>
-    #include <unistd.h>
-    #include <stdlib.h>
+#include <EGL/egl.h>
+#include <GLES3/gl3.h>
+#include <jni.h>
+#include <errno.h>
+#include <android/sensor.h>
+#include <android/log.h>
+#include <android_native_app_glue.h>
+#include <cstring>
+#include <unistd.h>
+#include <stdlib.h>
 }
 
 #define DEBUG_TAG "NativeGamePAD"

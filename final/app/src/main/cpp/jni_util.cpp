@@ -20,7 +20,7 @@
 
 static struct JniSetup _jni_setup = {0};
 
-struct JniSetup* GetJNISetup() {
+struct JniSetup *GetJNISetup() {
     if (!_jni_setup.env) {
         _jni_setup.env = NativeEngine::GetInstance()->GetJniEnv();
         _jni_setup.thiz = NativeEngine::GetInstance()->GetAndroidApp()->activity->clazz;

@@ -20,107 +20,120 @@
 #include "common.hpp"
 
 class GameAssetManager;
+
 class ImGuiManager;
+class TextureManager;
 
 struct NativeEngineSavedState {
     bool mHasFocus;
 };
 
 class NativeEngine {
-    public:
-        // create an engine
-        NativeEngine(struct android_app *app);
-        ~NativeEngine();
+public:
+    // create an engine
+    NativeEngine(struct android_app *app);
 
-        // runs application until it dies
-        void GameLoop();
+    ~NativeEngine();
 
-        // returns the JNI environment
-        JNIEnv* GetJniEnv();
+    // runs application until it dies
+    void GameLoop();
 
-        // returns the Android app object
-        android_app* GetAndroidApp();
+    // returns the JNI environment
+    JNIEnv *GetJniEnv();
 
-        // returns the asset manager instance
-        GameAssetManager* GetGameAssetManager() { return mGameAssetManager; }
+    // returns the Android app object
+    android_app *GetAndroidApp();
 
-        // returns the imgui manager instance
-        ImGuiManager* GetImGuiManager() { return mImGuiManager; }
+    // returns the asset manager instance
+    GameAssetManager *GetGameAssetManager() { return mGameAssetManager; }
+
+    // returns the imgui manager instance
+    ImGuiManager *GetImGuiManager() { return mImGuiManager; }
+
+        // returns the texture manager instance
+        TextureManager* GetTextureManager() { return mTextureManager; }
 
         // returns the (singleton) instance
         static NativeEngine* GetInstance();
 
-    private:
-        // variables to track Android lifecycle:
-        bool mHasFocus, mIsVisible, mHasWindow;
+private:
+    // variables to track Android lifecycle:
+    bool mHasFocus, mIsVisible, mHasWindow;
 
-        // are our OpenGL objects (textures, etc) currently loaded?
-        bool mHasGLObjects;
+    // are our OpenGL objects (textures, etc) currently loaded?
+    bool mHasGLObjects;
 
-        // android API version (0 if not yet queried)
-        int mApiVersion;
+    // android API version (0 if not yet queried)
+    int mApiVersion;
 
-        // Screen density
-        int mScreenDensity;
+    // Screen density
+    int mScreenDensity;
 
-        // EGL stuff
-        EGLDisplay mEglDisplay;
-        EGLSurface mEglSurface;
-        EGLContext mEglContext;
-        EGLConfig mEglConfig;
+    // EGL stuff
+    EGLDisplay mEglDisplay;
+    EGLSurface mEglSurface;
+    EGLContext mEglContext;
+    EGLConfig mEglConfig;
 
-        // known surface size
-        int mSurfWidth, mSurfHeight;
+    // known surface size
+    int mSurfWidth, mSurfHeight;
 
-        // android_app structure
-        struct android_app* mApp;
+    // android_app structure
+    struct android_app *mApp;
 
-        // additional saved state
-        struct NativeEngineSavedState mState;
+    // additional saved state
+    struct NativeEngineSavedState mState;
 
-        // JNI environment
-        JNIEnv *mJniEnv;
+    // JNI environment
+    JNIEnv *mJniEnv;
 
-        // Game asset manager instance
-        GameAssetManager *mGameAssetManager;
+    // Game asset manager instance
+    GameAssetManager *mGameAssetManager;
 
-        // ImGui manager instance
-        ImGuiManager *mImGuiManager;
+    // ImGui manager instance
+    ImGuiManager *mImGuiManager;
+
+        // Texture manager instance
+        TextureManager *mTextureManager;
 
         // is this the first frame we're drawing?
         bool mIsFirstFrame;
 
-        // initialize the display
-        bool InitDisplay();
+    // initialize the display
+    bool InitDisplay();
 
-        // initialize surface. Requires display to have been initialized first.
-        bool InitSurface();
+    // initialize surface. Requires display to have been initialized first.
+    bool InitSurface();
 
-        // initialize context. Requires display to have been initialized first.
-        bool InitContext();
+    // initialize context. Requires display to have been initialized first.
+    bool InitContext();
 
-        // kill context
-        void KillContext();
-        void KillSurface();
-        void KillDisplay(); // also causes context and surface to get killed
+    // kill context
+    void KillContext();
 
-        bool HandleEglError(EGLint error);
+    void KillSurface();
 
-        bool InitGLObjects();
-        void KillGLObjects();
+    void KillDisplay(); // also causes context and surface to get killed
 
-        void ConfigureOpenGL();
+    bool HandleEglError(EGLint error);
 
-        bool PrepareToRender();
+    bool InitGLObjects();
 
-        void DoFrame();
+    void KillGLObjects();
 
-        bool IsAnimating();
+    void ConfigureOpenGL();
 
-    public:
-        // these are public for simplicity because we have internal static callbacks
-        void HandleCommand(int32_t cmd);
-        bool HandleInput(AInputEvent *event);
+    bool PrepareToRender();
+
+    void DoFrame();
+
+    bool IsAnimating();
+
+public:
+    // these are public for simplicity because we have internal static callbacks
+    void HandleCommand(int32_t cmd);
+
+    bool HandleInput(AInputEvent *event);
 };
 
 #endif

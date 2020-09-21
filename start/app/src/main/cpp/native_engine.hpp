@@ -21,6 +21,7 @@
 
 class GameAssetManager;
 class ImGuiManager;
+class TextureManager;
 
 struct NativeEngineSavedState {
     bool mHasFocus;
@@ -46,6 +47,9 @@ class NativeEngine {
 
         // returns the imgui manager instance
         ImGuiManager* GetImGuiManager() { return mImGuiManager; }
+
+        // returns the texture manager instance
+        TextureManager* GetTextureManager() { return mTextureManager; }
 
         // returns the (singleton) instance
         static NativeEngine* GetInstance();
@@ -73,7 +77,7 @@ class NativeEngine {
         int mSurfWidth, mSurfHeight;
 
         // android_app structure
-        struct android_app* mApp;
+        struct android_app *mApp;
 
         // additional saved state
         struct NativeEngineSavedState mState;
@@ -86,6 +90,9 @@ class NativeEngine {
 
         // ImGui manager instance
         ImGuiManager *mImGuiManager;
+
+        // Texture manager instance
+        TextureManager *mTextureManager;
 
         // is this the first frame we're drawing?
         bool mIsFirstFrame;

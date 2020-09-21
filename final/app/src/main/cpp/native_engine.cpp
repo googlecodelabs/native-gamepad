@@ -21,14 +21,15 @@
 #include "input_util.hpp"
 #include "scene_manager.hpp"
 #include "native_engine.hpp"
+#include "texture_manager.hpp"
 
 // verbose debug logs on?
 #define VERBOSE_LOGGING 1
 
 #if VERBOSE_LOGGING
-    #define VLOGD LOGD
+#define VLOGD LOGD
 #else
-    #define VLOGD
+#define VLOGD
 #endif
 
 // max # of GL errors to print before giving up
@@ -55,30 +56,34 @@ NativeEngine::NativeEngine(struct android_app *app) {
     mGameAssetManager = new GameAssetManager(app->activity->assetManager, app->activity->vm,
                                              app->activity->clazz);
     mImGuiManager = NULL;
+    mTextureManager = NULL;
     memset(&mState, 0, sizeof(mState));
     mIsFirstFrame = true;
 
     if (app->savedState != NULL) {
         // we are starting with previously saved state -- restore it
-        mState = *(struct NativeEngineSavedState*) app->savedState;
+        mState = *(struct NativeEngineSavedState *) app->savedState;
     }
 
     // only one instance of NativeEngine may exist!
     MY_ASSERT(_singleton == NULL);
     _singleton = this;
 
-    VLOGD("NativeEngine: querying API level.");
+            VLOGD("NativeEngine: querying API level.");
     LOGD("NativeEngine: API version %d.", mApiVersion);
     LOGD("NativeEngine: Density %d", mScreenDensity);
 }
 
-NativeEngine* NativeEngine::GetInstance() {
+NativeEngine *NativeEngine::GetInstance() {
     MY_ASSERT(_singleton != NULL);
     return _singleton;
 }
 
 NativeEngine::~NativeEngine() {
-    VLOGD("NativeEngine: destructor running");
+            VLOGD("NativeEngine: destructor running");
+    if (mTextureManager != NULL) {
+        delete mTextureManager;
+    }
     KillContext();
     if (mImGuiManager != NULL) {
         delete mImGuiManager;
@@ -94,13 +99,13 @@ NativeEngine::~NativeEngine() {
     _singleton = NULL;
 }
 
-static void _handle_cmd_proxy(struct android_app* app, int32_t cmd) {
-    NativeEngine *engine = (NativeEngine*) app->userData;
+static void _handle_cmd_proxy(struct android_app *app, int32_t cmd) {
+    NativeEngine *engine = (NativeEngine *) app->userData;
     engine->HandleCommand(cmd);
 }
 
-static int _handle_input_proxy(struct android_app* app, AInputEvent* event) {
-    NativeEngine *engine = (NativeEngine*) app->userData;
+static int _handle_input_proxy(struct android_app *app, AInputEvent *event) {
+    NativeEngine *engine = (NativeEngine *) app->userData;
     return engine->HandleInput(event) ? 1 : 0;
 }
 
@@ -115,7 +120,7 @@ void NativeEngine::GameLoop() {
 
     while (1) {
         int events;
-        struct android_poll_source* source;
+        struct android_poll_source *source;
 
         // If not animating, block until we get an event; if animating, don't block.
         while ((ALooper_pollAll(IsAnimating() ? 0 : -1, NULL, &events, (void **) &source)) >= 0) {
@@ -137,7 +142,7 @@ void NativeEngine::GameLoop() {
     }
 }
 
-JNIEnv* NativeEngine::GetJniEnv() {
+JNIEnv *NativeEngine::GetJniEnv() {
     if (!mJniEnv) {
         LOGD("Attaching current thread to JNI.");
         if (0 != mApp->activity->vm->AttachCurrentThread(&mJniEnv, NULL)) {
@@ -154,23 +159,23 @@ JNIEnv* NativeEngine::GetJniEnv() {
 void NativeEngine::HandleCommand(int32_t cmd) {
     SceneManager *mgr = SceneManager::GetInstance();
 
-    VLOGD("NativeEngine: handling command %d.", cmd);
+            VLOGD("NativeEngine: handling command %d.", cmd);
     switch (cmd) {
         case APP_CMD_SAVE_STATE:
             // The system has asked us to save our current state.
-            VLOGD("NativeEngine: APP_CMD_SAVE_STATE");
+                    VLOGD("NativeEngine: APP_CMD_SAVE_STATE");
             mState.mHasFocus = mHasFocus;
             mApp->savedState = malloc(sizeof(mState));
-            *((NativeEngineSavedState*)mApp->savedState) = mState;
+            *((NativeEngineSavedState *) mApp->savedState) = mState;
             mApp->savedStateSize = sizeof(mState);
             break;
         case APP_CMD_INIT_WINDOW:
             // We have a window!
-            VLOGD("NativeEngine: APP_CMD_INIT_WINDOW");
+                    VLOGD("NativeEngine: APP_CMD_INIT_WINDOW");
             if (mApp->window != NULL) {
                 mHasWindow = true;
                 if (mApp->savedStateSize == sizeof(mState) && mApp->savedState != nullptr) {
-                    mState = *((NativeEngineSavedState*)mApp->savedState);
+                    mState = *((NativeEngineSavedState *) mApp->savedState);
                     mHasFocus = mState.mHasFocus;
                 } else {
                     // Workaround APP_CMD_GAINED_FOCUS issue where the focus state is not
@@ -178,67 +183,69 @@ void NativeEngine::HandleCommand(int32_t cmd) {
                     mHasFocus = appState.mHasFocus;
                 }
             }
-            VLOGD("HandleCommand(%d): hasWindow = %d, hasFocus = %d", cmd, mHasWindow?1:0, mHasFocus?1:0);
+                    VLOGD("HandleCommand(%d): hasWindow = %d, hasFocus = %d", cmd,
+                          mHasWindow ? 1 : 0, mHasFocus ? 1 : 0);
             break;
         case APP_CMD_TERM_WINDOW:
             // The window is going away -- kill the surface
-            VLOGD("NativeEngine: APP_CMD_TERM_WINDOW");
+                    VLOGD("NativeEngine: APP_CMD_TERM_WINDOW");
             KillSurface();
             mHasWindow = false;
             break;
         case APP_CMD_GAINED_FOCUS:
-            VLOGD("NativeEngine: APP_CMD_GAINED_FOCUS");
+                    VLOGD("NativeEngine: APP_CMD_GAINED_FOCUS");
             mHasFocus = true;
             mState.mHasFocus = appState.mHasFocus = mHasFocus;
             break;
         case APP_CMD_LOST_FOCUS:
-            VLOGD("NativeEngine: APP_CMD_LOST_FOCUS");
+                    VLOGD("NativeEngine: APP_CMD_LOST_FOCUS");
             mHasFocus = false;
             mState.mHasFocus = appState.mHasFocus = mHasFocus;
             break;
         case APP_CMD_PAUSE:
-            VLOGD("NativeEngine: APP_CMD_PAUSE");
+                    VLOGD("NativeEngine: APP_CMD_PAUSE");
             mGameAssetManager->OnPause();
             mgr->OnPause();
             break;
         case APP_CMD_RESUME:
-            VLOGD("NativeEngine: APP_CMD_RESUME");
+                    VLOGD("NativeEngine: APP_CMD_RESUME");
             mGameAssetManager->OnResume();
             mgr->OnResume();
             break;
         case APP_CMD_STOP:
-            VLOGD("NativeEngine: APP_CMD_STOP");
+                    VLOGD("NativeEngine: APP_CMD_STOP");
             mIsVisible = false;
             break;
         case APP_CMD_START:
-            VLOGD("NativeEngine: APP_CMD_START");
+                    VLOGD("NativeEngine: APP_CMD_START");
             mIsVisible = true;
             break;
         case APP_CMD_WINDOW_RESIZED:
         case APP_CMD_CONFIG_CHANGED:
-            VLOGD("NativeEngine: %s", cmd == APP_CMD_WINDOW_RESIZED ?
-                    "APP_CMD_WINDOW_RESIZED" : "APP_CMD_CONFIG_CHANGED");
+                    VLOGD("NativeEngine: %s", cmd == APP_CMD_WINDOW_RESIZED ?
+                                              "APP_CMD_WINDOW_RESIZED" : "APP_CMD_CONFIG_CHANGED");
             // Window was resized or some other configuration changed.
             // Note: we don't handle this event because we check the surface dimensions
             // every frame, so that's how we know it was resized. If you are NOT doing that,
             // then you need to handle this event!
             break;
         case APP_CMD_LOW_MEMORY:
-            VLOGD("NativeEngine: APP_CMD_LOW_MEMORY");
+                    VLOGD("NativeEngine: APP_CMD_LOW_MEMORY");
             // system told us we have low memory. So if we are not visible, let's
             // cooperate by deallocating all of our graphic resources.
             if (!mHasWindow) {
-                VLOGD("NativeEngine: trimming memory footprint (deleting GL objects).");
+                        VLOGD("NativeEngine: trimming memory footprint (deleting GL objects).");
                 KillGLObjects();
             }
             break;
         default:
-            VLOGD("NativeEngine: (unknown command).");
+                    VLOGD("NativeEngine: (unknown command).");
             break;
     }
 
-    VLOGD("NativeEngine: STATUS: F%d, V%d, W%d, EGL: D %p, S %p, CTX %p, CFG %p",
-            mHasFocus, mIsVisible, mHasWindow, mEglDisplay, mEglSurface, mEglContext, mEglConfig);
+            VLOGD("NativeEngine: STATUS: F%d, V%d, W%d, EGL: D %p, S %p, CTX %p, CFG %p",
+                  mHasFocus, mIsVisible, mHasWindow, mEglDisplay, mEglSurface, mEglContext,
+                  mEglConfig);
 }
 
 static bool _cooked_event_callback(struct CookedEvent *event) {
@@ -303,7 +310,7 @@ bool NativeEngine::InitSurface() {
     EGLint numConfigs;
 
     const EGLint attribs[] = {
-            EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT, // request OpenGL ES 2.0
+            EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT, // request OpenGL ES 3.0
             EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
             EGL_BLUE_SIZE, 8,
             EGL_GREEN_SIZE, 8,
@@ -331,7 +338,7 @@ bool NativeEngine::InitContext() {
     // need a display
     MY_ASSERT(mEglDisplay != EGL_NO_DISPLAY);
 
-    EGLint attribList[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE }; // OpenGL 2.0
+    EGLint attribList[] = {EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE}; // OpenGL ES 3.0
 
     if (mEglContext != EGL_NO_CONTEXT) {
         // nothing to do
@@ -393,6 +400,10 @@ bool NativeEngine::PrepareToRender() {
 
         // configure our global OpenGL settings
         ConfigureOpenGL();
+
+        if (mTextureManager == NULL) {
+            mTextureManager = new TextureManager();
+        }
 
         if (mImGuiManager == NULL) {
             mImGuiManager = new ImGuiManager();
@@ -518,7 +529,7 @@ void NativeEngine::DoFrame() {
     // prepare to render (create context, surfaces, etc, if needed)
     if (!PrepareToRender()) {
         // not ready
-        VLOGD("NativeEngine: preparation to render failed.");
+                VLOGD("NativeEngine: preparation to render failed.");
         return;
     }
 
@@ -533,7 +544,7 @@ void NativeEngine::DoFrame() {
     if (width != mSurfWidth || height != mSurfHeight) {
         // notify scene manager that the surface has changed size
         LOGD("NativeEngine: surface changed size %dx%d --> %dx%d", mSurfWidth, mSurfHeight,
-                width, height);
+             width, height);
         mSurfWidth = width;
         mSurfHeight = height;
         mgr->SetScreenSize(mSurfWidth, mSurfHeight);
@@ -574,7 +585,7 @@ void NativeEngine::DoFrame() {
     }
 }
 
-android_app* NativeEngine::GetAndroidApp() {
+android_app *NativeEngine::GetAndroidApp() {
     return mApp;
 }
 

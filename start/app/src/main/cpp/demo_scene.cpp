@@ -19,6 +19,7 @@
 #include "imgui.h"
 #include "imgui_manager.hpp"
 #include "native_engine.hpp"
+#include "texture_manager.hpp"
 
 extern "C" {
 #include <GLES2/gl2.h>
@@ -27,15 +28,42 @@ extern "C" {
 namespace {
     // Show ImGui demo window for testing purposes
     bool show_demo_window = false;
+
+    static void LoadTexturesForAssetPack(GameAssetManager *gameAssetManager,
+                                         const char *assetPackName, bool *texturesLoaded) {
+        if (*texturesLoaded == false) {
+            TextureManager *textureManager = NativeEngine::GetInstance()->GetTextureManager();
+
+            int assetPackFileCount = 0;
+            const char **assetPackFiles = gameAssetManager->GetGameAssetPackFileList(assetPackName,
+                                                                                     &assetPackFileCount);
+            if (assetPackFiles != NULL) {
+                for (int i = 0; i < assetPackFileCount; ++i) {
+                    if (textureManager->IsTextureLoaded(assetPackFiles[i]) == false) {
+                        if (textureManager->LoadTexture(assetPackFiles[i])) {
+                            LOGD("Loaded texture %s", assetPackFiles[i]);
+                        } else {
+                            LOGE("Failed to load texture %s", assetPackFiles[i]);
+                        }
+                    }
+                }
+            }
+        }
+        *texturesLoaded = true;
+    }
 }
 
 DemoScene::DemoScene() {
     mPointerDown = false;
     mErrorScreen = false;
+    mInstallTimeTexturesLoaded = false;
+    mFastFollowTexturesLoaded = false;
+    mOnDemandTexturesLoaded = false;
     mWaitScreen = DetermineWaitStatus();
     mTransitionStart = 0.0f;
     mPointerX = 0.0f;
     mPointerY = 0.0f;
+    mCurrentTextureReference = TextureManager::INVALID_TEXTURE_REF;
 }
 
 DemoScene::~DemoScene() {
@@ -68,10 +96,10 @@ void DemoScene::DoFrame() {
     if (show_demo_window) {
         // showing the imgui demo screen for testing
         ImGui::ShowDemoWindow(&show_demo_window);
-    } else if (mErrorScreen){
+    } else if (mErrorScreen) {
         // if an asset error occurred, display the error ui and do nothing else
         DisplayErrorUI();
-    } else if (mWaitScreen){
+    } else if (mWaitScreen) {
         // if waiting for must-have assets, display the wait ui and do nothing else
         DisplayWaitUI();
     } else {
@@ -141,7 +169,9 @@ void DemoScene::DisplayAssetPackDownloadStatus(GameAssetManager *gameAssetManage
                                                const char *assetPackName) {
     float completionPercent = 0.0f;
     gameAssetManager->GetDownloadStatus(assetPackName, &completionPercent, NULL);
-    const int displayPercent = static_cast<int>((completionPercent > 0.0f) ? 100.0f / completionPercent : 0.0f);
+    const int displayPercent = static_cast<int>((completionPercent > 0.0f) ? 100.0f /
+                                                                             completionPercent
+                                                                           : 0.0f);
     ImGui::Text("Downloading pack %s (%d%%)", assetPackName, displayPercent);
     ImGui::ProgressBar(completionPercent);
 
@@ -163,7 +193,7 @@ void DemoScene::DisplayAssetPackNeedsDownloadStatus(GameAssetManager *gameAssetM
     uint64_t assetPackSize = 0;
     gameAssetManager->GetDownloadStatus(assetPackName,
                                         NULL, &assetPackSize);
-    const float assetPackSizeMB = ((float)assetPackSize) / (1024.0f * 1024.0f);
+    const float assetPackSizeMB = ((float) assetPackSize) / (1024.0f * 1024.0f);
     char downloadLabel[128];
     snprintf(downloadLabel, 128, "Download %s %.1f MB", assetPackName, assetPackSizeMB);
     if (ImGui::Button(downloadLabel)) {
@@ -177,7 +207,7 @@ void DemoScene::DisplayAssetPackNeedsMobileAuthStatus(GameAssetManager *gameAsse
     uint64_t assetPackSize = 0;
     gameAssetManager->GetDownloadStatus(assetPackName,
                                         NULL, &assetPackSize);
-    const float assetPackSizeMB = ((float)assetPackSize) / (1024.0f * 1024.0f);
+    const float assetPackSizeMB = ((float) assetPackSize) / (1024.0f * 1024.0f);
     char authLabel[128];
     snprintf(authLabel, 128, "Request Mobile Download %s %.1f MB", assetPackName, assetPackSizeMB);
     if (ImGui::Button(authLabel)) {
@@ -186,31 +216,19 @@ void DemoScene::DisplayAssetPackNeedsMobileAuthStatus(GameAssetManager *gameAsse
 }
 
 void DemoScene::DisplayAssetPackReadyStatus(GameAssetManager *gameAssetManager,
-                                            const char *assetPackName) {
+                                            const char *assetPackName, bool *texturesLoaded) {
+    // Ensure textures from this asset pack are loaded and ready for use
+    LoadTexturesForAssetPack(gameAssetManager, assetPackName, texturesLoaded);
+
+    TextureManager *textureManager = NativeEngine::GetInstance()->GetTextureManager();
     ImGui::Text("Pack: %s available", assetPackName);
     int assetPackFileCount = 0;
-    const char** assetPackFiles = gameAssetManager->GetGameAssetPackFileList(assetPackName,
+    const char **assetPackFiles = gameAssetManager->GetGameAssetPackFileList(assetPackName,
                                                                              &assetPackFileCount);
     if (assetPackFiles != NULL) {
         for (int i = 0; i < assetPackFileCount; ++i) {
-            // Test load button, immediately frees data after load
-            char loadLabel[128];
-            snprintf(loadLabel, 128, "Test Load %s", assetPackFiles[i]);
-
-            if (ImGui::Button(loadLabel)) {
-                const uint64_t fileSize = gameAssetManager->GetGameAssetSize(assetPackFiles[i]);
-                if (fileSize > 0) {
-                    void *tempLoadBuffer = malloc(fileSize);
-                    if (tempLoadBuffer != NULL) {
-                        if (gameAssetManager->LoadGameAsset(assetPackFiles[i], fileSize,
-                                                            tempLoadBuffer)) {
-                            LOGD("Loaded asset file %s", assetPackFiles[i]);
-                        } else {
-                            LOGE("Failed to load asset file %s", assetPackFiles[i]);
-                        }
-                        free(tempLoadBuffer);
-                    }
-                }
+            if (ImGui::Button(assetPackFiles[i])) {
+                mCurrentTextureReference = textureManager->GetTextureReference(assetPackFiles[i]);
             }
         }
     }
@@ -227,7 +245,7 @@ void DemoScene::DisplayAssetPackReadyStatus(GameAssetManager *gameAssetManager,
     }
 }
 
-void DemoScene::DisplayAssetPackUI(const char *assetPackName) {
+void DemoScene::DisplayAssetPackUI(const char *assetPackName, bool *texturesLoaded) {
     GameAssetManager *gameAssetManager = NativeEngine::GetInstance()->GetGameAssetManager();
     const GameAssetManager::GameAssetStatus assetStatus = gameAssetManager->
             GetGameAssetPackStatus(assetPackName);
@@ -250,7 +268,7 @@ void DemoScene::DisplayAssetPackUI(const char *assetPackName) {
             DisplayAssetPackDownloadStatus(gameAssetManager, assetPackName);
             break;
         case GameAssetManager::GAMEASSET_READY:
-            DisplayAssetPackReadyStatus(gameAssetManager, assetPackName);
+            DisplayAssetPackReadyStatus(gameAssetManager, assetPackName, texturesLoaded);
             break;
         case GameAssetManager::GAMEASSET_PENDING_ACTION:
             ImGui::Text("Waiting for pending action: %s", assetPackName);
@@ -272,28 +290,44 @@ void DemoScene::DisplayErrorUI() {
 
 void DemoScene::DisplayMainUI() {
     DisplayUIHeader();
-    DisplayAssetPackUI(INSTALL_ASSETPACK_NAME);
-    DisplayAssetPackUI(FASTFOLLOW_ASSETPACK_NAME);
-    DisplayAssetPackUI(ONDEMAND_ASSETPACK_NAME);
+    ImGui::Columns(2, NULL, false);
+    DisplayAssetPackUI(INSTALL_ASSETPACK_NAME, &mInstallTimeTexturesLoaded);
+    DisplayAssetPackUI(FASTFOLLOW_ASSETPACK_NAME, &mFastFollowTexturesLoaded);
+    DisplayAssetPackUI(ONDEMAND_ASSETPACK_NAME, &mOnDemandTexturesLoaded);
+    ImGui::NextColumn();
+    if (mCurrentTextureReference != TextureManager::INVALID_TEXTURE_REF) {
+        ImGui::SetCursorPosY(0.0f);
+        float columnWidth = ImGui::GetColumnWidth();
+        ImVec2 textureSize(columnWidth * 0.9f, columnWidth * 0.9f);
+        ImGui::Image(reinterpret_cast<ImTextureID>(mCurrentTextureReference), textureSize);
+    }
+    ImGui::Columns(1);
     ImGui::End();
     ImGui::PopStyleVar();
 }
 
 void DemoScene::DisplayUIHeader() {
-    ImGuiIO& io = ImGui::GetIO();
-    ImVec2 minWindowSize(io.DisplaySize.x * 0.8f, io.DisplaySize.y * 0.8f);
+    ImGuiIO &io = ImGui::GetIO();
+    ImVec2 windowPosition(0.0f, 0.0f);
+    ImVec2 minWindowSize(io.DisplaySize.x * 0.95f, io.DisplaySize.y * 0.95f);
     ImVec2 maxWindowSize = io.DisplaySize;
+    ImGui::SetNextWindowPos(windowPosition);
     ImGui::SetNextWindowSizeConstraints(minWindowSize, maxWindowSize, NULL, NULL);
     ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize |
                                    ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove;
     ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 32.0f);
-    ImGui::Begin("Native GamePAD Demo", NULL, windowFlags);
+    const char *textureFormat =
+            NativeEngine::GetInstance()->GetTextureManager()->GetTextureFormatInUse() ==
+            TextureManager::TEXTUREFORMAT_ETC2 ? "ETC2" : "ASTC";
+    char titleString[64];
+    snprintf(titleString, 64, "Native PAD Demo (%s)", textureFormat);
+    ImGui::Begin(titleString, NULL, windowFlags);
 }
 
 void DemoScene::DisplayWaitUI() {
     DisplayUIHeader();
     ImGui::Text("Waiting on fast-follow pack:");
-    DisplayAssetPackUI(FASTFOLLOW_ASSETPACK_NAME);
+    DisplayAssetPackUI(FASTFOLLOW_ASSETPACK_NAME, &mFastFollowTexturesLoaded);
     ImGui::End();
     ImGui::PopStyleVar();
 
@@ -310,7 +344,7 @@ void DemoScene::DisplayWaitUI() {
 }
 
 void DemoScene::UpdateUIInput() {
-    ImGuiIO& io = ImGui::GetIO();
+    ImGuiIO &io = ImGui::GetIO();
     io.MouseDown[0] = mPointerDown;
-    io.MousePos = ImVec2(mPointerX,mPointerY);
+    io.MousePos = ImVec2(mPointerX, mPointerY);
 }

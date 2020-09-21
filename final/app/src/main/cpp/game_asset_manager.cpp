@@ -35,36 +35,37 @@ namespace {
     struct AssetPackDefinition {
         GameAssetManager::GameAssetPackType mPackType;
         size_t mPackFileCount;
-        const char* mPackName;
-        const char** mPackFiles;
+        const char *mPackName;
+        const char **mPackFiles;
     };
 
     class AssetPackInfo {
-        public:
-            AssetPackInfo(const AssetPackDefinition *definition) :
+    public:
+        AssetPackInfo(const AssetPackDefinition *definition) :
                 mDefinition(definition),
                 mAssetPackBasePath(NULL),
                 mAssetPackDownloadSize(0),
                 mAssetPackStatus(GameAssetManager::GAMEASSET_NOT_FOUND),
                 mAssetPackCompletion(0.0f) {
-            }
+        }
 
-            ~AssetPackInfo() {
-                if (mAssetPackBasePath != NULL) {
-                    delete[] mAssetPackBasePath;
-                }
+        ~AssetPackInfo() {
+            if (mAssetPackBasePath != NULL) {
+                delete[] mAssetPackBasePath;
             }
+        }
 
-            const AssetPackDefinition *mDefinition;
-            const char *mAssetPackBasePath;
-            uint64_t mAssetPackDownloadSize;
-            GameAssetManager::GameAssetStatus mAssetPackStatus;
-            float mAssetPackCompletion;
+        const AssetPackDefinition *mDefinition;
+        const char *mAssetPackBasePath;
+        uint64_t mAssetPackDownloadSize;
+        GameAssetManager::GameAssetStatus mAssetPackStatus;
+        float mAssetPackCompletion;
     };
 
-    const char *InstallFileList[] = { "installtime_data.bin" };
-    const char *FastFollowFileList[] = { "fastfollow_data.bin" };
-    const char *OnDemandFileList[] = { "ondemand1_data.bin", "ondemand2_data.bin" };
+    const char *InstallFileList[] = {"textures/InstallTime1.tex", "textures/InstallTime2.tex"};
+    const char *FastFollowFileList[] = {"textures/FastFollow1.tex", "textures/FastFollow2.tex"};
+    const char *OnDemandFileList[] = {"textures/OnDemand1.tex", "textures/OnDemand2.tex",
+                                      "textures/OnDemand3.tex", "textures/OnDemand4.tex"};
 
     const AssetPackDefinition AssetPacks[] = {
             {
@@ -90,74 +91,84 @@ namespace {
 
 // Internal implementation utility class
 class GameAssetManagerInternals {
-    public:
-        GameAssetManagerInternals(AAssetManager *assetManager, JavaVM *jvm, jobject nativeActivity);
-        ~GameAssetManagerInternals();
+public:
+    GameAssetManagerInternals(AAssetManager *assetManager, JavaVM *jvm, jobject nativeActivity);
 
-        uint64_t GetExternalGameAssetSize(const char *assetName, AssetPackInfo *packInfo);
-        uint64_t GetInternalGameAssetSize(const char *assetName);
+    ~GameAssetManagerInternals();
 
-        bool LoadExternalGameAsset(const char *assetName, const uint64_t bufferSize, void *loadBuffer, AssetPackInfo *packInfo);
-        bool LoadInternalGameAsset(const char *assetName, const uint64_t bufferSize, void *loadBuffer);
+    uint64_t GetExternalGameAssetSize(const char *assetName, AssetPackInfo *packInfo);
 
-        void ChangeAssetPackStatus(AssetPackInfo *packInfo,
-                                  const GameAssetManager::GameAssetStatus newStatus) {
-            if (packInfo->mAssetPackStatus != newStatus) {
-                packInfo->mAssetPackStatus = newStatus;
-            }
+    uint64_t GetInternalGameAssetSize(const char *assetName);
+
+    bool LoadExternalGameAsset(const char *assetName, const uint64_t bufferSize, void *loadBuffer,
+                               AssetPackInfo *packInfo);
+
+    bool LoadInternalGameAsset(const char *assetName, const uint64_t bufferSize, void *loadBuffer);
+
+    void ChangeAssetPackStatus(AssetPackInfo *packInfo,
+                               const GameAssetManager::GameAssetStatus newStatus) {
+        if (packInfo->mAssetPackStatus != newStatus) {
+            packInfo->mAssetPackStatus = newStatus;
         }
+    }
 
-        AssetPackInfo* GetAssetPack(const int index) {
-            return index < mAssetPackCount ? mAssetPacks[index] : NULL;
-        }
+    AssetPackInfo *GetAssetPack(const int index) {
+        return index < mAssetPackCount ? mAssetPacks[index] : NULL;
+    }
 
-        AssetPackInfo* GetAssetPackByName(const char *assetPackName);
+    AssetPackInfo *GetAssetPackByName(const char *assetPackName);
 
-        int GetAssetPackCount() const {
-            return mAssetPackCount;
-        }
+    int GetAssetPackCount() const {
+        return mAssetPackCount;
+    }
 
-        const char* GetAssetPackErrorMessage() const {
-            return mAssetPackErrorMessage;
-        }
+    const char *GetAssetPackErrorMessage() const {
+        return mAssetPackErrorMessage;
+    }
 
-        AssetPackInfo* GetAssetPackForAssetName(const char *assetName);
+    AssetPackInfo *GetAssetPackForAssetName(const char *assetName);
 
-        bool GenerateFullAssetPath(const char *assetName, const AssetPackInfo * packInfo,
-                                   char *pathBuffer, const size_t bufferSize);
+    bool GenerateFullAssetPath(const char *assetName, const AssetPackInfo *packInfo,
+                               char *pathBuffer, const size_t bufferSize);
 
-        void SetAssetPackInitialStatus(AssetPackInfo &info);
+    void SetAssetPackInitialStatus(AssetPackInfo &info);
 
-        // Asset Pack Manager support functions below
-        bool GetAssetPackManagerInitialized() const { return mAssetPackManagerInitialized; }
+    // Asset Pack Manager support functions below
+    bool GetAssetPackManagerInitialized() const { return mAssetPackManagerInitialized; }
 
-        // Requests
-        bool RequestAssetPackDownload(const char *assetPackName);
-        void RequestAssetPackCancelDownload(const char *assetPackName);
-        bool RequestAssetPackRemoval(const char *assetPackName);
-        void RequestMobileDataDownloads();
+    // Requests
+    bool RequestAssetPackDownload(const char *assetPackName);
 
-        // Update processing
-        void UpdateAssetPackBecameAvailable(AssetPackInfo *assetPackInfo);
-        void UpdateAssetPackFromDownloadState(AssetPackInfo *assetPackInfo,
-                                              AssetPackDownloadState *downloadState);
-        void UpdateMobileDataRequestStatus();
+    void RequestAssetPackCancelDownload(const char *assetPackName);
 
-        // Error reporting utility
-        void SetAssetPackErrorStatus(const AssetPackErrorCode assetPackErrorCode,
-                                     AssetPackInfo *assetPackInfo, const char *message);
+    bool RequestAssetPackRemoval(const char *assetPackName);
 
-    private:
-        AAssetManager *mAssetManager;
-        std::vector<AssetPackInfo *>mAssetPacks;
-        const char *mAssetPackErrorMessage;
-        jobject mNativeActivity;
-        int mAssetPackCount;
-        bool mRequestingMobileDownload;
-        bool mAssetPackManagerInitialized;
+    void RequestMobileDataDownloads();
+
+    // Update processing
+    void UpdateAssetPackBecameAvailable(AssetPackInfo *assetPackInfo);
+
+    void UpdateAssetPackFromDownloadState(AssetPackInfo *assetPackInfo,
+                                          AssetPackDownloadState *downloadState);
+
+    void UpdateMobileDataRequestStatus();
+
+    // Error reporting utility
+    void SetAssetPackErrorStatus(const AssetPackErrorCode assetPackErrorCode,
+                                 AssetPackInfo *assetPackInfo, const char *message);
+
+private:
+    AAssetManager *mAssetManager;
+    std::vector<AssetPackInfo *> mAssetPacks;
+    const char *mAssetPackErrorMessage;
+    jobject mNativeActivity;
+    int mAssetPackCount;
+    bool mRequestingMobileDownload;
+    bool mAssetPackManagerInitialized;
 };
 
-GameAssetManagerInternals::GameAssetManagerInternals(AAssetManager *assetManager, JavaVM *jvm, jobject nativeActivity) {
+GameAssetManagerInternals::GameAssetManagerInternals(AAssetManager *assetManager, JavaVM *jvm,
+                                                     jobject nativeActivity) {
     // Initialize the asset pack manager
     AssetPackErrorCode assetPackErrorCode = AssetPackManager_init(jvm, nativeActivity);
     if (assetPackErrorCode == ASSET_PACK_NO_ERROR) {
@@ -166,7 +177,8 @@ GameAssetManagerInternals::GameAssetManagerInternals(AAssetManager *assetManager
         mAssetPackManagerInitialized = true;
     } else {
         mAssetPackManagerInitialized = false;
-        SetAssetPackErrorStatus(assetPackErrorCode, NULL, "GameAssetManager: Asset Pack Manager initialization");
+        SetAssetPackErrorStatus(assetPackErrorCode, NULL,
+                                "GameAssetManager: Asset Pack Manager initialization");
     }
 
     mAssetManager = assetManager;
@@ -175,7 +187,7 @@ GameAssetManagerInternals::GameAssetManagerInternals(AAssetManager *assetManager
     mAssetPacks.reserve(mAssetPackCount);
     mRequestingMobileDownload = false;
 
-    for (int i = 0; i < mAssetPackCount; ++i ) {
+    for (int i = 0; i < mAssetPackCount; ++i) {
         LOGD("GameAssetManager: Setting up asset pack %s", AssetPacks[i].mPackName);
         AssetPackInfo *assetPackInfo = new AssetPackInfo(&AssetPacks[i]);
         mAssetPacks.push_back(assetPackInfo);
@@ -202,7 +214,7 @@ GameAssetManagerInternals::GameAssetManagerInternals(AAssetManager *assetManager
 GameAssetManagerInternals::~GameAssetManagerInternals() {
     // Delete our allocated asset pack info structures
     for (std::vector<AssetPackInfo *>::iterator iter = mAssetPacks.begin();
-            iter != mAssetPacks.end(); ++iter) {
+         iter != mAssetPacks.end(); ++iter) {
         delete *iter;
     }
     mAssetPacks.clear();
@@ -211,7 +223,8 @@ GameAssetManagerInternals::~GameAssetManagerInternals() {
     AssetPackManager_destroy();
 }
 
-uint64_t GameAssetManagerInternals::GetExternalGameAssetSize(const char *assetName, AssetPackInfo *packInfo) {
+uint64_t GameAssetManagerInternals::GetExternalGameAssetSize(const char *assetName,
+                                                             AssetPackInfo *packInfo) {
     uint64_t assetSize = 0;
     if (packInfo->mAssetPackBasePath == NULL) {
         // If a parent directory base path was not set, assume this is actually an internal
@@ -244,7 +257,9 @@ uint64_t GameAssetManagerInternals::GetInternalGameAssetSize(const char *assetNa
     return assetSize;
 }
 
-bool GameAssetManagerInternals::LoadExternalGameAsset(const char *assetName, const uint64_t bufferSize, void *loadBuffer, AssetPackInfo *packInfo) {
+bool
+GameAssetManagerInternals::LoadExternalGameAsset(const char *assetName, const uint64_t bufferSize,
+                                                 void *loadBuffer, AssetPackInfo *packInfo) {
     bool loadSuccessful = false;
     if (packInfo->mAssetPackBasePath == NULL) {
         // If a parent directory base path was not set, assume this is actually an internal
@@ -273,7 +288,9 @@ bool GameAssetManagerInternals::LoadExternalGameAsset(const char *assetName, con
     return loadSuccessful;
 }
 
-bool GameAssetManagerInternals::LoadInternalGameAsset(const char *assetName, const uint64_t bufferSize, void *loadBuffer) {
+bool
+GameAssetManagerInternals::LoadInternalGameAsset(const char *assetName, const uint64_t bufferSize,
+                                                 void *loadBuffer) {
     bool loadSuccess = false;
 
     AAsset *asset = AAssetManager_open(mAssetManager, assetName, AASSET_MODE_STREAMING);
@@ -289,7 +306,7 @@ bool GameAssetManagerInternals::LoadInternalGameAsset(const char *assetName, con
     return loadSuccess;
 }
 
-AssetPackInfo *GameAssetManagerInternals::GetAssetPackByName(const char* assetPackName) {
+AssetPackInfo *GameAssetManagerInternals::GetAssetPackByName(const char *assetPackName) {
     AssetPackInfo *packInfo = NULL;
 
     for (int i = 0; i < mAssetPackCount; ++i) {
@@ -307,7 +324,7 @@ AssetPackInfo *GameAssetManagerInternals::GetAssetPackForAssetName(const char *a
 
     while (i < mAssetPackCount) {
         for (size_t j = 0; j < mAssetPacks[i]->mDefinition->mPackFileCount; ++j) {
-            if (strcmp(assetName, mAssetPacks[i]->mDefinition->mPackFiles[j]) == 0 ) {
+            if (strcmp(assetName, mAssetPacks[i]->mDefinition->mPackFiles[j]) == 0) {
                 packInfo = mAssetPacks[i];
                 i = mAssetPackCount;
                 break;
@@ -320,7 +337,7 @@ AssetPackInfo *GameAssetManagerInternals::GetAssetPackForAssetName(const char *a
 }
 
 bool GameAssetManagerInternals::GenerateFullAssetPath(const char *assetName,
-                                                      const AssetPackInfo * packInfo,
+                                                      const AssetPackInfo *packInfo,
                                                       char *pathBuffer, const size_t bufferSize) {
     bool generatedPath = false;
     const size_t requiredSize = strlen(assetName) + strlen(packInfo->mAssetPackBasePath) + 1;
@@ -353,7 +370,7 @@ bool GameAssetManagerInternals::RequestAssetPackDownload(const char *assetPackNa
 
     if (success) {
         ChangeAssetPackStatus(GetAssetPackByName(assetPackName),
-                GameAssetManager::GAMEASSET_DOWNLOADING);
+                              GameAssetManager::GAMEASSET_DOWNLOADING);
     } else {
         SetAssetPackErrorStatus(assetPackErrorCode, GetAssetPackByName(assetPackName),
                                 "GameAssetManager: requestDownload");
@@ -397,7 +414,7 @@ void GameAssetManagerInternals::RequestMobileDataDownloads() {
 
 void GameAssetManagerInternals::UpdateAssetPackBecameAvailable(AssetPackInfo *assetPackInfo) {
     LOGD("GameAssetManager: ProcessAssetPackBecameAvailable : %s",
-            assetPackInfo->mDefinition->mPackName);
+         assetPackInfo->mDefinition->mPackName);
     if (assetPackInfo->mAssetPackStatus != GameAssetManager::GAMEASSET_READY) {
         assetPackInfo->mAssetPackStatus = GameAssetManager::GAMEASSET_READY;
         assetPackInfo->mAssetPackCompletion = 1.0f;
@@ -409,9 +426,10 @@ void GameAssetManagerInternals::UpdateAssetPackBecameAvailable(AssetPackInfo *as
                 assetPackInfo->mDefinition->mPackName, &assetPackLocation);
 
         if (assetPackErrorCode == ASSET_PACK_NO_ERROR) {
-            AssetPackStorageMethod storageMethod = AssetPackLocation_getStorageMethod(assetPackLocation);
+            AssetPackStorageMethod storageMethod = AssetPackLocation_getStorageMethod(
+                    assetPackLocation);
             if (storageMethod == ASSET_PACK_STORAGE_FILES) {
-                const char* assetPackPath = AssetPackLocation_getAssetsPath(assetPackLocation);
+                const char *assetPackPath = AssetPackLocation_getAssetsPath(assetPackLocation);
                 if (assetPackPath != NULL) {
                     // Make a copy of the path, and add a path delimiter to the end
                     // if it isn't already present
@@ -450,12 +468,12 @@ void GameAssetManagerInternals::UpdateAssetPackFromDownloadState(AssetPackInfo *
             assetPackInfo->mAssetPackCompletion = 0.0f;
             break;
         case ASSET_PACK_DOWNLOADING: {
-                ChangeAssetPackStatus(assetPackInfo, GameAssetManager::GAMEASSET_DOWNLOADING);
-                uint64_t dlBytes = AssetPackDownloadState_getBytesDownloaded(downloadState);
-                uint64_t totalBytes = AssetPackDownloadState_getTotalBytesToDownload(downloadState);
-                double dlPercent = ((double) dlBytes) / ((double) totalBytes);
-                assetPackInfo->mAssetPackCompletion = (float) dlPercent;
-            }
+            ChangeAssetPackStatus(assetPackInfo, GameAssetManager::GAMEASSET_DOWNLOADING);
+            uint64_t dlBytes = AssetPackDownloadState_getBytesDownloaded(downloadState);
+            uint64_t totalBytes = AssetPackDownloadState_getTotalBytesToDownload(downloadState);
+            double dlPercent = ((double) dlBytes) / ((double) totalBytes);
+            assetPackInfo->mAssetPackCompletion = (float) dlPercent;
+        }
             break;
         case ASSET_PACK_TRANSFERRING:
             break;
@@ -473,12 +491,12 @@ void GameAssetManagerInternals::UpdateAssetPackFromDownloadState(AssetPackInfo *
             ChangeAssetPackStatus(assetPackInfo, GameAssetManager::GAMEASSET_NEEDS_MOBILE_AUTH);
             break;
         case ASSET_PACK_NOT_INSTALLED: {
-                ChangeAssetPackStatus(assetPackInfo, GameAssetManager::GAMEASSET_NEEDS_DOWNLOAD);
-                uint64_t totalBytes = AssetPackDownloadState_getTotalBytesToDownload(downloadState);
-                if (totalBytes > 0) {
-                    assetPackInfo->mAssetPackDownloadSize = totalBytes;
-                }
+            ChangeAssetPackStatus(assetPackInfo, GameAssetManager::GAMEASSET_NEEDS_DOWNLOAD);
+            uint64_t totalBytes = AssetPackDownloadState_getTotalBytesToDownload(downloadState);
+            if (totalBytes > 0) {
+                assetPackInfo->mAssetPackDownloadSize = totalBytes;
             }
+        }
             break;
         case ASSET_PACK_INFO_PENDING:
             break;
@@ -492,7 +510,8 @@ void GameAssetManagerInternals::UpdateAssetPackFromDownloadState(AssetPackInfo *
             ChangeAssetPackStatus(assetPackInfo, GameAssetManager::GAMEASSET_READY);
             assetPackInfo->mAssetPackCompletion = 1.0f;
             break;
-        default: break;
+        default:
+            break;
     }
 }
 
@@ -504,45 +523,59 @@ void GameAssetManagerInternals::SetAssetPackErrorStatus(const AssetPackErrorCode
             // No error, so return immediately.
             return;
         case ASSET_PACK_APP_UNAVAILABLE:
-            mAssetPackErrorMessage = "ASSET_PACK_APP_UNAVAILABLE"; break;
+            mAssetPackErrorMessage = "ASSET_PACK_APP_UNAVAILABLE";
+            break;
         case ASSET_PACK_UNAVAILABLE:
-            mAssetPackErrorMessage = "ASSET_PACK_UNAVAILABLE"; break;
+            mAssetPackErrorMessage = "ASSET_PACK_UNAVAILABLE";
+            break;
         case ASSET_PACK_INVALID_REQUEST:
-            mAssetPackErrorMessage = "ASSET_PACK_INVALID_REQUEST"; break;
+            mAssetPackErrorMessage = "ASSET_PACK_INVALID_REQUEST";
+            break;
         case ASSET_PACK_DOWNLOAD_NOT_FOUND:
-            mAssetPackErrorMessage = "ASSET_PACK_DOWNLOAD_NOT_FOUND"; break;
+            mAssetPackErrorMessage = "ASSET_PACK_DOWNLOAD_NOT_FOUND";
+            break;
         case ASSET_PACK_API_NOT_AVAILABLE:
-            mAssetPackErrorMessage = "ASSET_PACK_API_NOT_AVAILABLE"; break;
+            mAssetPackErrorMessage = "ASSET_PACK_API_NOT_AVAILABLE";
+            break;
         case ASSET_PACK_NETWORK_ERROR:
-            mAssetPackErrorMessage = "ASSET_PACK_NETWORK_ERROR"; break;
+            mAssetPackErrorMessage = "ASSET_PACK_NETWORK_ERROR";
+            break;
         case ASSET_PACK_ACCESS_DENIED:
-            mAssetPackErrorMessage = "ASSET_PACK_ACCESS_DENIED"; break;
+            mAssetPackErrorMessage = "ASSET_PACK_ACCESS_DENIED";
+            break;
         case ASSET_PACK_INSUFFICIENT_STORAGE:
-            mAssetPackErrorMessage = "ASSET_PACK_INSUFFICIENT_STORAGE"; break;
+            mAssetPackErrorMessage = "ASSET_PACK_INSUFFICIENT_STORAGE";
+            break;
         case ASSET_PACK_PLAY_STORE_NOT_FOUND:
-            mAssetPackErrorMessage = "ASSET_PACK_PLAY_STORE_NOT_FOUND"; break;
+            mAssetPackErrorMessage = "ASSET_PACK_PLAY_STORE_NOT_FOUND";
+            break;
         case ASSET_PACK_NETWORK_UNRESTRICTED:
-            mAssetPackErrorMessage = "ASSET_PACK_NETWORK_UNRESTRICTED"; break;
+            mAssetPackErrorMessage = "ASSET_PACK_NETWORK_UNRESTRICTED";
+            break;
         case ASSET_PACK_INTERNAL_ERROR:
-            mAssetPackErrorMessage = "ASSET_PACK_INTERNAL_ERROR"; break;
+            mAssetPackErrorMessage = "ASSET_PACK_INTERNAL_ERROR";
+            break;
         case ASSET_PACK_INITIALIZATION_NEEDED:
-            mAssetPackErrorMessage = "ASSET_PACK_INITIALIZATION_NEEDED"; break;
+            mAssetPackErrorMessage = "ASSET_PACK_INITIALIZATION_NEEDED";
+            break;
         case ASSET_PACK_INITIALIZATION_FAILED:
-            mAssetPackErrorMessage = "ASSET_PACK_INITIALIZATION_FAILED"; break;
+            mAssetPackErrorMessage = "ASSET_PACK_INITIALIZATION_FAILED";
+            break;
 
-        default:    mAssetPackErrorMessage = "Unknown error code";
+        default:
+            mAssetPackErrorMessage = "Unknown error code";
             break;
     }
 
     if (assetPackInfo == NULL) {
-    LOGE("%s failed with error code %d : %s", message, 
-        static_cast<int>(assetPackErrorCode), mAssetPackErrorMessage);
+        LOGE("%s failed with error code %d : %s", message,
+             static_cast<int>(assetPackErrorCode), mAssetPackErrorMessage);
     } else {
         assetPackInfo->mAssetPackStatus = GameAssetManager::GAMEASSET_ERROR;
         LOGE("%s failed on asset pack %s with error code %d : %s",
-            message, assetPackInfo->mDefinition->mPackName,
-            static_cast<int>(assetPackErrorCode),
-            mAssetPackErrorMessage);
+             message, assetPackInfo->mDefinition->mPackName,
+             static_cast<int>(assetPackErrorCode),
+             mAssetPackErrorMessage);
     }
 }
 
@@ -565,7 +598,8 @@ void GameAssetManagerInternals::UpdateMobileDataRequestStatus() {
     }
 }
 
-GameAssetManager::GameAssetManager(AAssetManager *assetManager, JavaVM *jvm, jobject android_context) {
+GameAssetManager::GameAssetManager(AAssetManager *assetManager, JavaVM *jvm,
+                                   jobject android_context) {
     mInternals = new GameAssetManagerInternals(assetManager, jvm, android_context);
 }
 
@@ -584,16 +618,16 @@ void GameAssetManager::OnResume() {
     AssetPackManager_onResume();
 }
 
-const char* GameAssetManager::GetGameAssetErrorMessage() {
+const char *GameAssetManager::GetGameAssetErrorMessage() {
     return mInternals->GetAssetPackErrorMessage();
 }
 
 void GameAssetManager::UpdateGameAssetManager() {
-   // Update the status outcome of any mobile data requests
+    // Update the status outcome of any mobile data requests
     mInternals->UpdateMobileDataRequestStatus();
 
     // Update status of asset packs if necessary
-    for (int i = 0; i < mInternals->GetAssetPackCount(); ++i ) {
+    for (int i = 0; i < mInternals->GetAssetPackCount(); ++i) {
         AssetPackInfo *assetPackInfo = mInternals->GetAssetPack(i);
         if (assetPackInfo != NULL) {
             // If we are in an internal status where we want to query the asset pack
@@ -601,25 +635,25 @@ void GameAssetManager::UpdateGameAssetManager() {
             if (assetPackInfo->mAssetPackStatus == GameAssetManager::GAMEASSET_WAITING_FOR_STATUS ||
                 assetPackInfo->mAssetPackStatus == GameAssetManager::GAMEASSET_DOWNLOADING ||
                 assetPackInfo->mAssetPackStatus == GameAssetManager::GAMEASSET_PENDING_ACTION ||
-                assetPackInfo->mAssetPackStatus == GameAssetManager::GAMEASSET_NEEDS_MOBILE_AUTH ) {
-                    const char *assetPackName = assetPackInfo->mDefinition->mPackName;
-                    AssetPackDownloadState *downloadState = NULL;
-                    AssetPackErrorCode assetPackErrorCode = AssetPackManager_getDownloadState(
-                            assetPackName, &downloadState);
+                assetPackInfo->mAssetPackStatus == GameAssetManager::GAMEASSET_NEEDS_MOBILE_AUTH) {
+                const char *assetPackName = assetPackInfo->mDefinition->mPackName;
+                AssetPackDownloadState *downloadState = NULL;
+                AssetPackErrorCode assetPackErrorCode = AssetPackManager_getDownloadState(
+                        assetPackName, &downloadState);
 
-                    if (assetPackErrorCode == ASSET_PACK_NO_ERROR) {
-                        // Use the returned download state to update our asset pack info
-                        mInternals->UpdateAssetPackFromDownloadState(assetPackInfo, downloadState);
-                    } else {
-                        // If an error is reported, mark the asset pack as being in error and
-                        // bail on the update process
-                        mInternals->SetAssetPackErrorStatus(assetPackErrorCode, assetPackInfo,
-                                                            "GameAssetManager: getDownloadState");
-                        return;
-                    }
+                if (assetPackErrorCode == ASSET_PACK_NO_ERROR) {
+                    // Use the returned download state to update our asset pack info
+                    mInternals->UpdateAssetPackFromDownloadState(assetPackInfo, downloadState);
+                } else {
+                    // If an error is reported, mark the asset pack as being in error and
+                    // bail on the update process
+                    mInternals->SetAssetPackErrorStatus(assetPackErrorCode, assetPackInfo,
+                                                        "GameAssetManager: getDownloadState");
+                    return;
+                }
 
-                    AssetPackDownloadState_destroy(downloadState);
-                
+                AssetPackDownloadState_destroy(downloadState);
+
             }
         }
     }
@@ -648,7 +682,8 @@ uint64_t GameAssetManager::GetGameAssetSize(const char *assetName) {
     return assetSize;
 }
 
-bool GameAssetManager::LoadGameAsset(const char *assetName, const size_t bufferSize, void *loadBuffer) {
+bool
+GameAssetManager::LoadGameAsset(const char *assetName, const size_t bufferSize, void *loadBuffer) {
     bool loadSuccess = false;
 
     if (assetName != NULL) {
@@ -673,7 +708,7 @@ bool GameAssetManager::LoadGameAsset(const char *assetName, const size_t bufferS
     return loadSuccess;
 }
 
-const char* GameAssetManager::GetGameAssetParentPackName(const char *assetName) {
+const char *GameAssetManager::GetGameAssetParentPackName(const char *assetName) {
     const char *assetPackName = NULL;
 
     if (assetName != NULL) {
@@ -686,8 +721,8 @@ const char* GameAssetManager::GetGameAssetParentPackName(const char *assetName) 
     return assetPackName;
 }
 
-const char** GameAssetManager::GetGameAssetPackFileList(const char *assetPackName, int *fileListSize)
-{
+const char **
+GameAssetManager::GetGameAssetPackFileList(const char *assetPackName, int *fileListSize) {
     AssetPackInfo *packInfo = mInternals->GetAssetPackByName(assetPackName);
     if (packInfo != NULL) {
         if (fileListSize != NULL) {
@@ -702,7 +737,8 @@ const char** GameAssetManager::GetGameAssetPackFileList(const char *assetPackNam
     return NULL;
 }
 
-GameAssetManager::GameAssetStatus GameAssetManager::GetGameAssetPackStatus(const char *assetPackName) {
+GameAssetManager::GameAssetStatus
+GameAssetManager::GetGameAssetPackStatus(const char *assetPackName) {
     GameAssetManager::GameAssetStatus assetStatus = GAMEASSET_NOT_FOUND;
 
     if (assetPackName != NULL) {

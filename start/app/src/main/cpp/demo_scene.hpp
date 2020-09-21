@@ -34,11 +34,19 @@ protected:
     // if true, shows an "error" screen instead of the interface
     bool mErrorScreen;
 
+    // have textures been loaded for an asset pack
+    bool mInstallTimeTexturesLoaded;
+    bool mFastFollowTexturesLoaded;
+    bool mOnDemandTexturesLoaded;
+
     // touch pointer current X
     float mPointerX;
 
     // touch pointer current Y
     float mPointerY;
+
+    // current image texture reference
+    uint64_t mCurrentTextureReference;
 
     // must be implemented by subclass
     virtual void OnButtonClicked(int buttonId);
@@ -64,10 +72,10 @@ protected:
 
     // Display the status of a ready asset pack
     void DisplayAssetPackReadyStatus(GameAssetManager *gameAssetManager,
-                                     const char *assetPackName);
+                                     const char *assetPackName, bool *texturesLoaded);
 
     // Display the UI for an asset pack
-    void DisplayAssetPackUI(const char *assetPackName);
+    void DisplayAssetPackUI(const char *assetPackName, bool *texturesLoaded);
 
     // Display the UI if an asset availability error occurred
     void DisplayErrorUI();

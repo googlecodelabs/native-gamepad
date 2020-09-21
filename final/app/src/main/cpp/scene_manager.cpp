@@ -65,7 +65,7 @@ void SceneManager::InstallScene(Scene *newScene) {
     }
 }
 
-Scene* SceneManager::GetScene() {
+Scene *SceneManager::GetScene() {
     return mCurScene;
 }
 
@@ -113,7 +113,7 @@ void SceneManager::SetScreenSize(int width, int height) {
     }
 }
 
-SceneManager* SceneManager::GetInstance() {
+SceneManager *SceneManager::GetInstance() {
     return &_sceneManager;
 }
 

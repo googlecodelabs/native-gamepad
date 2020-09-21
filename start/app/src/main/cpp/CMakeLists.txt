@@ -27,7 +27,7 @@ set(CMAKE_SHARED_LINKER_FLAGS
 
 # Set common compiler options
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall")
-add_definitions("-DIMGUI_IMPL_OPENGL_ES2")
+add_definitions("-DIMGUI_IMPL_OPENGL_ES3")
 
 # build Dear ImGui as a static lib
 set(IMGUI_BASE_DIR "../../../../../third-party/imgui")
@@ -53,6 +53,7 @@ add_library(game SHARED
         native_engine.cpp
         scene.cpp
         scene_manager.cpp
+        texture_manager.cpp
         util.cpp)
 
 target_include_directories(game PRIVATE
@@ -67,5 +68,5 @@ target_link_libraries(game
         native_app_glue
         atomic
         EGL
-        GLESv2
+        GLESv3
         log)

@@ -23,14 +23,19 @@
  * Manages the status and rendering of the ImGui system
  */
 class ImGuiManager {
-    public:
-        ImGuiManager();
-        ~ImGuiManager();
+public:
+    ImGuiManager();
 
-        void SetDisplaySize(const int displayWidth, const int displayHeight, const int displayDpi);
-        void BeginImGuiFrame();
-        void EndImGuiFrame();
-    private:
-        DeltaClock mDeltaClock;
+    ~ImGuiManager();
+
+    void SetDisplaySize(const int displayWidth, const int displayHeight, const int displayDpi);
+
+    void BeginImGuiFrame();
+
+    void EndImGuiFrame();
+
+private:
+    DeltaClock mDeltaClock;
 };
+
 #endif

@@ -21,8 +21,8 @@ android {
     ndkVersion '21.2.6472646'
 
     defaultConfig {
-        applicationId 'com.google.sample.nativegamepad'
-        minSdkVersion 14
+        applicationId 'com.google.sample.nativepaddemo'
+        minSdkVersion 18
         targetSdkVersion 29
         versionCode     1
         versionName    '1.0'

@@ -41,8 +41,8 @@ float Clock() {
 
     struct timespec t;
     clock_gettime(CLOCK_MONOTONIC, &t);
-    float secDiff = (float)(t.tv_sec - _base.tv_sec);
-    float msecDiff = (float)((t.tv_nsec - _base.tv_nsec) / 1000000);
+    float secDiff = (float) (t.tv_sec - _base.tv_sec);
+    float msecDiff = (float) ((t.tv_nsec - _base.tv_nsec) / 1000000);
     return secDiff + 0.001f * msecDiff;
 }
 
@@ -53,6 +53,6 @@ float SineWave(float min, float max, float period, float phase) {
 }
 
 bool BlinkFunc(float period) {
-    return (int)(Clock() / period) & 1;
+    return (int) (Clock() / period) & 1;
 }
 

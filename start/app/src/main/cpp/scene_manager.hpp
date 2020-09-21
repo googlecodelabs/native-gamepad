@@ -34,62 +34,66 @@ struct PointerCoords {
 /* Scene manager (singleton). The scene manager is responsible for managing the
  * currently active scene (class Scene) and delivering events to it. */
 class SceneManager {
-    private:
-        Scene* mCurScene;
-        int mScreenWidth, mScreenHeight;
-        bool mHasGraphics;
-        Scene *mSceneToInstall;
-        void InstallScene(Scene *newScene);
+private:
+    Scene *mCurScene;
+    int mScreenWidth, mScreenHeight;
+    bool mHasGraphics;
+    Scene *mSceneToInstall;
 
-    public:
-        SceneManager();
-        void SetScreenSize(int width, int height);
-        void KillGraphics();
-        void StartGraphics();
+    void InstallScene(Scene *newScene);
 
-        // Returns screen width in pixels
-        int GetScreenWidth() { return mScreenWidth; }
+public:
+    SceneManager();
 
-        // Returns screen height in pixels
-        int GetScreenHeight() { return mScreenHeight; }
+    void SetScreenSize(int width, int height);
 
-        // Returns screen's aspect ratio
-        float GetScreenAspect() {
-            return (float)mScreenWidth/mScreenHeight;
-        }
+    void KillGraphics();
 
-        // Returns whether or not we have graphics (i.e. OpenGL context etc)
-        bool HasGraphics() {
-            return mHasGraphics;
-        }
+    void StartGraphics();
 
-        // Returns current scene
-        Scene* GetScene();
+    // Returns screen width in pixels
+    int GetScreenWidth() { return mScreenWidth; }
 
-        // Renders current scene
-        void DoFrame();
+    // Returns screen height in pixels
+    int GetScreenHeight() { return mScreenHeight; }
 
-        // Reports that a pointer (e.g. touchscreen, touchpad, etc) went down
-        void OnPointerDown(int pointerId, const struct PointerCoords *coords);
+    // Returns screen's aspect ratio
+    float GetScreenAspect() {
+        return (float) mScreenWidth / mScreenHeight;
+    }
 
-        // Reports that a pointer (e.g. touchscreen, touchpad, etc) went up
-        void OnPointerUp(int pointerId, const struct PointerCoords *coords);
+    // Returns whether or not we have graphics (i.e. OpenGL context etc)
+    bool HasGraphics() {
+        return mHasGraphics;
+    }
 
-        // Reports that a pointer (e.g. touchscreen, touchpad, etc) moved
-        void OnPointerMove(int pointerId, const struct PointerCoords *coords);
+    // Returns current scene
+    Scene *GetScene();
 
-        // Reports that the game was paused (e.g. Activity got an onPause())
-        void OnPause();
+    // Renders current scene
+    void DoFrame();
 
-        // Reports that the game was resumed (e.g. Activity got an onResume())
-        void OnResume();
+    // Reports that a pointer (e.g. touchscreen, touchpad, etc) went down
+    void OnPointerDown(int pointerId, const struct PointerCoords *coords);
 
-        // Requests that a new scene be installed, replacing the currently active
-        // scene. The new scene will be installed on the next DoFrame() call.
-        void RequestNewScene(Scene *newScene);
+    // Reports that a pointer (e.g. touchscreen, touchpad, etc) went up
+    void OnPointerUp(int pointerId, const struct PointerCoords *coords);
 
-        // Returns the (singleton) instance of SceneManager.
-        static SceneManager* GetInstance();
+    // Reports that a pointer (e.g. touchscreen, touchpad, etc) moved
+    void OnPointerMove(int pointerId, const struct PointerCoords *coords);
+
+    // Reports that the game was paused (e.g. Activity got an onPause())
+    void OnPause();
+
+    // Reports that the game was resumed (e.g. Activity got an onResume())
+    void OnResume();
+
+    // Requests that a new scene be installed, replacing the currently active
+    // scene. The new scene will be installed on the next DoFrame() call.
+    void RequestNewScene(Scene *newScene);
+
+    // Returns the (singleton) instance of SceneManager.
+    static SceneManager *GetInstance();
 };
 
 #endif

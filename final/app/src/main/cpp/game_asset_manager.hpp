@@ -22,6 +22,7 @@
 #include "util.hpp"
 
 class GameAssetManagerInternals;
+
 struct AAssetManager;
 
 static const char *INSTALL_ASSETPACK_NAME = "InstallPack";
@@ -70,10 +71,12 @@ public:
     };
 
     GameAssetManager(AAssetManager *assetManager, JavaVM *jvm, jobject android_context);
+
     ~GameAssetManager();
 
     // Event handlers for pause and resume events
     void OnPause();
+
     void OnResume();
 
     // Call once every game frame to update internal asset states
@@ -81,11 +84,11 @@ public:
 
     // If an asset was set to the GAMEASSET_ERROR status, this will return
     // an error message describing the reason for the error
-    const char* GetGameAssetErrorMessage();
+    const char *GetGameAssetErrorMessage();
 
     // Return the name of the asset pack that contains the specified asset file,
     // returns NULL if no parent pack could be found.
-    const char* GetGameAssetParentPackName(const char *assetName);
+    const char *GetGameAssetParentPackName(const char *assetName);
 
     // If the status of the asset is GAMEASSET_READY, return the size in bytes
     // If the status anything else, 0 will be returned
@@ -97,7 +100,7 @@ public:
 
     // Returns an array of filenames of files present in the specified asset pack,
     // returns NULL if the asset pack name was not found
-    const char** GetGameAssetPackFileList(const char *assetPackName, int *fileListSize);
+    const char **GetGameAssetPackFileList(const char *assetPackName, int *fileListSize);
 
     // Returns the status of an asset pack
     GameAssetStatus GetGameAssetPackStatus(const char *assetPackName);

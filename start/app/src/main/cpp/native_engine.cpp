@@ -21,6 +21,7 @@
 #include "input_util.hpp"
 #include "scene_manager.hpp"
 #include "native_engine.hpp"
+#include "texture_manager.hpp"
 
 // verbose debug logs on?
 #define VERBOSE_LOGGING 1
@@ -55,6 +56,7 @@ NativeEngine::NativeEngine(struct android_app *app) {
     mGameAssetManager = new GameAssetManager(app->activity->assetManager, app->activity->vm,
                                              app->activity->clazz);
     mImGuiManager = NULL;
+    mTextureManager = NULL;
     memset(&mState, 0, sizeof(mState));
     mIsFirstFrame = true;
 
@@ -79,6 +81,9 @@ NativeEngine* NativeEngine::GetInstance() {
 
 NativeEngine::~NativeEngine() {
     VLOGD("NativeEngine: destructor running");
+    if (mTextureManager != NULL) {
+        delete mTextureManager;
+    }
     KillContext();
     if (mImGuiManager != NULL) {
         delete mImGuiManager;
@@ -302,7 +307,7 @@ bool NativeEngine::InitSurface() {
     EGLint numConfigs;
 
     const EGLint attribs[] = {
-            EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT, // request OpenGL ES 2.0
+            EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT, // request OpenGL ES 3.0
             EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
             EGL_BLUE_SIZE, 8,
             EGL_GREEN_SIZE, 8,
@@ -330,7 +335,7 @@ bool NativeEngine::InitContext() {
     // need a display
     MY_ASSERT(mEglDisplay != EGL_NO_DISPLAY);
 
-    EGLint attribList[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE }; // OpenGL 2.0
+    EGLint attribList[] = { EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE }; // OpenGL ES 3.0
 
     if (mEglContext != EGL_NO_CONTEXT) {
         // nothing to do
@@ -392,6 +397,10 @@ bool NativeEngine::PrepareToRender() {
 
         // configure our global OpenGL settings
         ConfigureOpenGL();
+
+        if (mTextureManager == NULL) {
+            mTextureManager = new TextureManager();
+        }
 
         if (mImGuiManager == NULL) {
             mImGuiManager = new ImGuiManager();

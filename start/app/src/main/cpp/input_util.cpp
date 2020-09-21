@@ -37,16 +37,16 @@ static bool CookEvent_Motion(AInputEvent *event, CookedEventCallback callback) {
     int action = AMotionEvent_getAction(event);
     int actionMasked = action & AMOTION_EVENT_ACTION_MASK;
     int ptrIndex = (action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >>
-            AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+                                                                      AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
 
     struct CookedEvent ev;
     memset(&ev, 0, sizeof(ev));
 
     if (actionMasked == AMOTION_EVENT_ACTION_DOWN || actionMasked ==
-            AMOTION_EVENT_ACTION_POINTER_DOWN) {
+                                                     AMOTION_EVENT_ACTION_POINTER_DOWN) {
         ev.type = COOKED_EVENT_TYPE_POINTER_DOWN;
     } else if (actionMasked == AMOTION_EVENT_ACTION_UP || actionMasked ==
-            AMOTION_EVENT_ACTION_POINTER_UP) {
+                                                          AMOTION_EVENT_ACTION_POINTER_UP) {
         ev.type = COOKED_EVENT_TYPE_POINTER_UP;
     } else {
         ev.type = COOKED_EVENT_TYPE_POINTER_MOVE;
@@ -73,7 +73,7 @@ static bool CookEvent_Motion(AInputEvent *event, CookedEventCallback callback) {
         ev.motionX = AMotionEvent_getX(event, i);
         ev.motionY = AMotionEvent_getY(event, i);
         ev.motionPointerId = AMotionEvent_getPointerId(event, i);
-        callback(&ev);        
+        callback(&ev);
     }
 
     return true;

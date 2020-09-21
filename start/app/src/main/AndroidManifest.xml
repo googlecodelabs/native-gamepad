@@ -18,7 +18,7 @@
 <!-- TODO: when building this sample, replace the package name below
      (com.google.example.games.tunnel) by your own package name -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-      package="com.google.sample.nativegamepad">
+      package="com.google.sample.nativepaddemo">
 
   <application
       android:allowBackup="false"
@@ -38,4 +38,5 @@
       </intent-filter>
     </activity>
   </application>
+  <uses-feature android:glEsVersion="0x00030000" android:required="true" />
 </manifest>

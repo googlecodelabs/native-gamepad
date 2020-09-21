@@ -24,44 +24,44 @@ struct PointerCoords;
  * scene is active, and that scene is the one who decides what gets drawn to the
  * screen and how input is handled. See also: SceneManager */
 class Scene {
-    public:
-        // Called when graphics context is initialized. This is when textures,
-        // geometry, etc should be initialized.
-        virtual void OnStartGraphics();
+public:
+    // Called when graphics context is initialized. This is when textures,
+    // geometry, etc should be initialized.
+    virtual void OnStartGraphics();
 
-        // Called when the graphics context is about to be shut down. Tear down
-        // all geometry, textures, etc.
-        virtual void OnKillGraphics();
+    // Called when the graphics context is about to be shut down. Tear down
+    // all geometry, textures, etc.
+    virtual void OnKillGraphics();
 
-        // Called when this scene has just been installed as the active scene.
-        virtual void OnInstall();
+    // Called when this scene has just been installed as the active scene.
+    virtual void OnInstall();
 
-        // Called when it's time to draw a frame to the screen.
-        virtual void DoFrame();
+    // Called when it's time to draw a frame to the screen.
+    virtual void DoFrame();
 
-        // Called when this scene is about to be uninstalled as the active scene.
-        virtual void OnUninstall();
+    // Called when this scene is about to be uninstalled as the active scene.
+    virtual void OnUninstall();
 
-        // Called when a pointer goes down (e.g. touch, touchpad, etc)
-        virtual void OnPointerDown(int pointerId, const struct PointerCoords *coords);
+    // Called when a pointer goes down (e.g. touch, touchpad, etc)
+    virtual void OnPointerDown(int pointerId, const struct PointerCoords *coords);
 
-        // Called when a pointer goes up (e.g. touch, touchpad, etc)
-        virtual void OnPointerUp(int pointerId, const struct PointerCoords *coords);
+    // Called when a pointer goes up (e.g. touch, touchpad, etc)
+    virtual void OnPointerUp(int pointerId, const struct PointerCoords *coords);
 
-        // Called when a pointer moves (e.g. touch, touchpad, etc)
-        virtual void OnPointerMove(int pointerId, const struct PointerCoords *coords);
+    // Called when a pointer moves (e.g. touch, touchpad, etc)
+    virtual void OnPointerMove(int pointerId, const struct PointerCoords *coords);
 
-        // Called when screen gets resized
-        virtual void OnScreenResized(int width, int height);
+    // Called when screen gets resized
+    virtual void OnScreenResized(int width, int height);
 
-        // Called when game is paused (e.g. onPause())
-        virtual void OnPause();
+    // Called when game is paused (e.g. onPause())
+    virtual void OnPause();
 
-        // Called when game is resumed (e.g. onResumed())
-        virtual void OnResume();
+    // Called when game is resumed (e.g. onResumed())
+    virtual void OnResume();
 
-        // Destructor
-        virtual ~Scene();
+    // Destructor
+    virtual ~Scene();
 };
 
 #endif

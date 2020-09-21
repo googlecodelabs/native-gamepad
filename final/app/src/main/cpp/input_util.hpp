@@ -36,6 +36,7 @@ struct CookedEvent {
 };
 
 typedef bool (*CookedEventCallback)(struct CookedEvent *event);
+
 bool CookEvent(AInputEvent *event, CookedEventCallback callback);
 
 #endif
